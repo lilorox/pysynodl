@@ -15,6 +15,14 @@ def print_error(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def human_sizeof(num):
+    for x in ['B', 'KB', 'MB', 'GB']:
+        if(num < 1024.0):
+            return "%3.1f%s" % (num, x)
+        num /= 1024.0
+    return "%3.1f%s" % (num, 'TB')
+
+
 def usage():
     print(
         "Usage: %s <help|add|list> [options]" % sys.argv[0],
@@ -137,7 +145,39 @@ def add_downloads(ds, options, args):
 
 
 def list_downloads(ds, options, args):
-    print(ds.list())
+    dl_list = ds.list()
+    fields_max_length = [0, 0, 0, 0, 0]
+    titles = [
+        "Download",
+        "Destination",
+        "Status",
+        "Downloaded",
+        "Total"
+    ]
+
+    for dl in dl_list:
+        fields_max_length = [
+            max(len(dl['title']), len(titles[0]), fields_max_length[0]),
+            max(len(dl['additional']['detail']['destination']), len(titles[1]), fields_max_length[1]),
+            max(len(dl['status']), len(titles[2]), fields_max_length[2]),
+            max(len(human_sizeof(dl['additional']['transfer']['size_downloaded'])), len(titles[3]), fields_max_length[3]),
+            max(len(human_sizeof(dl['size'])), len(titles[4]), fields_max_length[4])
+        ]
+    format_string = "%%-%ds  %%-%ds  %%-%ds  %%%ds / %%-%ds" % tuple(fields_max_length)
+
+    print(format_string % tuple(titles))
+
+    for dl in dl_list:
+        print(
+            format_string
+            % (
+                dl['title'],
+                dl['additional']['detail']['destination'],
+                dl['status'],
+                human_sizeof(dl['additional']['transfer']['size_downloaded']),
+                human_sizeof(dl['size'])
+            )
+        )
 
 def main():
     (command_func, options, args) = parse_command_line()

@@ -9,7 +9,7 @@ class DownloadStation(API):
 
     def list(self):
         res = self.req(
-            "%s/%s?api=SYNO.DownloadStation.Task&version=%d&method=list&_sid=%s"
+            "%s/%s?api=SYNO.DownloadStation.Task&version=%d&method=list&additional=detail,transfer&_sid=%s"
             % (
                 self.base_url,
                 self.cgi,
