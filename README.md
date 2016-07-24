@@ -1,6 +1,6 @@
 # Installation
 
-1. Clone this repo and navigate to it
+1. Clone this repo
 ```
 git clone https://github.com/lilorox/pysynodl
 ```
