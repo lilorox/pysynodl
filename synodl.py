@@ -6,8 +6,10 @@ from getpass import getpass
 from optparse import OptionParser
 from synology.downloadstation import DownloadStation
 
-logging.basicConfig()
-logging.getLogger().setLevel(logging.ERROR)
+logging.basicConfig(
+    format="%(asctime)-15s %(levelname)-6s %(name)-8s %(message)s",
+    level=logging.ERROR
+)
 
 command = ""
 
