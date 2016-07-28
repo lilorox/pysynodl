@@ -48,9 +48,9 @@ class API:
             )
         )
 
-    def req(self, url):
+    def req(self, url, params=None):
         logging.debug('GET: ' + url)
-        r = requests.get(url)
+        r = requests.get(url, params=params)
         return r.json()
 
     def req_post(self, url, data=None):

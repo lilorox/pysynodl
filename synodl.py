@@ -40,12 +40,17 @@ def usage():
         " -v, --verbose     Increases verbosity (cumulative)",
         "",
         "Commands options:",
-        " add [-d destination] URL",
+        " add [-d dest|--destination=dest] URL",
         "   Adds the specified URL to download queue, destination on the synology",
         "   can be specified",
         "",
         " list",
         "   Lists the current downloads, finished or in progress",
+        "",
+        " delete [-f|--force] [-a|--all] id1 id2 id3",
+        "   Removes the downloads specified by their ids.",
+        "   If -f / --force is used, it will also remove unfinished downloads.",
+        "   If -a / --all is used, it will remove all downloads.",
         "",
         " help",
         "   Shows this help",
@@ -68,6 +73,9 @@ def parse_command_line():
     elif command == "list":
         parse_list_command(parser)
         command_func = list_downloads
+    elif command == "delete":
+        parse_delete_command(parser)
+        command_func = delete_downloads
     elif command in ["-h", "--help", "h", "help"]:
         usage()
         sys.exit(0)
@@ -126,16 +134,30 @@ def get_global_options_parser():
 
 
 def parse_add_command(parser):
-    # Actions
     parser.add_option(
         "-d", "--destination",
-        help="Sets the download destination, e.g. video/Films",
         dest="destination"
     )
 
 
 def parse_list_command(parser):
     pass
+
+
+def parse_delete_command(parser):
+    parser.add_option(
+        "-f", "--force",
+        dest="force",
+        default=False,
+        action="store_true"
+    )
+
+    parser.add_option(
+        "-a", "--all",
+        dest="all",
+        default=False,
+        action="store_true"
+    )
 
 
 def add_downloads(ds, options, args):
@@ -146,8 +168,9 @@ def add_downloads(ds, options, args):
 
 def list_downloads(ds, options, args):
     dl_list = ds.list()
-    fields_max_length = [0, 0, 0, 0, 0]
+    fields_max_length = [0, 0, 0, 0, 0, 0]
     titles = [
+        "Id",
         "Download",
         "Destination",
         "Status",
@@ -157,20 +180,21 @@ def list_downloads(ds, options, args):
 
     for dl in dl_list:
         fields_max_length = [
-            max(len(dl['title']), len(titles[0]), fields_max_length[0]),
-            max(len(dl['additional']['detail']['destination']), len(titles[1]), fields_max_length[1]),
-            max(len(dl['status']), len(titles[2]), fields_max_length[2]),
-            max(len(human_sizeof(dl['additional']['transfer']['size_downloaded'])), len(titles[3]), fields_max_length[3]),
-            max(len(human_sizeof(dl['size'])), len(titles[4]), fields_max_length[4])
+            max(len(dl['id']), len(titles[0]), fields_max_length[0]),
+            max(len(dl['title']), len(titles[1]), fields_max_length[1]),
+            max(len(dl['additional']['detail']['destination']), len(titles[2]), fields_max_length[2]),
+            max(len(dl['status']), len(titles[3]), fields_max_length[3]),
+            max(len(human_sizeof(dl['additional']['transfer']['size_downloaded'])), len(titles[4]), fields_max_length[4]),
+            max(len(human_sizeof(dl['size'])), len(titles[5]), fields_max_length[5])
         ]
-    format_string = "%%-%ds  %%-%ds  %%-%ds  %%%ds / %%-%ds" % tuple(fields_max_length)
+    format_string = "%%-%ds %%-%ds  %%-%ds  %%-%ds  %%%ds / %%-%ds" % tuple(fields_max_length)
 
     print(format_string % tuple(titles))
-
     for dl in dl_list:
         print(
             format_string
             % (
+                dl['id'],
                 dl['title'],
                 dl['additional']['detail']['destination'],
                 dl['status'],
@@ -178,6 +202,14 @@ def list_downloads(ds, options, args):
                 human_sizeof(dl['size'])
             )
         )
+
+
+def delete_downloads(ds, options, id_list):
+    if options.all:
+        id_list = [dl['id'] for dl in ds.list()]
+    logging.info("Deleting downloads %s" % ",".join(id_list))
+    ds.delete(id_list, force=options.force)
+
 
 def main():
     (command_func, options, args) = parse_command_line()
