@@ -1,0 +1,25 @@
+#
+# pysynodl configuration
+# This file should be copied into ~/.synodl.ini
+#
+
+[synology]
+# host: IP address or hostname of the synology
+# default: syno
+#host = syno
+
+# port: Port used to reach the synology's API
+# default: 5000 for insecure connection, 5001 for secure connection
+#port = 5000
+
+# user: Username with access to the DownloadStation API
+# default: admin
+#user = admin
+
+# password: Password of the user
+# No default, the script will ask for a password if not provided here
+#password =
+
+# secure: Use secure connection if set to true
+# default: false
+#secure = false

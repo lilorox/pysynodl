@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import configparser
 import logging
+import os.path
 import sys
 from getpass import getpass
 from optparse import OptionParser
@@ -12,6 +14,7 @@ logging.basicConfig(
 )
 
 command = ""
+config_file = os.path.join(os.path.expanduser("~"), ".synodl.ini")
 
 def print_error(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -28,6 +31,10 @@ def human_sizeof(num):
 def usage():
     print(
         "Usage: %s <help|add|list> [options]" % sys.argv[0],
+        "Configuration file:",
+        " The script will look for the file ~/.synodl.ini to load the default values",
+        " that can be overriden by the following options.",
+        "",
         "Global options:",
         " -u, --user        Username of the account to use for authentication",
         "                   Defaults to 'admin'",
@@ -60,14 +67,14 @@ def usage():
     )
 
 
-def parse_command_line():
+def parse_command_line(config):
     if len(sys.argv) < 2:
         print_error("Missing parameters.")
         usage()
         sys.exit(1)
 
     command = sys.argv.pop(1)
-    parser = get_global_options_parser()
+    parser = get_global_options_parser(config)
 
     if command == "add":
         parse_add_command(parser)
@@ -90,7 +97,26 @@ def parse_command_line():
     return (command_func, options, args)
 
 
-def get_global_options_parser():
+def parse_config():
+    if not os.path.isfile(config_file):
+        return {}
+
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    if "synology" not in config.sections():
+        return {}
+
+    conf = config['synology']
+    if "secure" in conf:
+        if conf['secure'] == "true" or conf['secure'] == "yes":
+            conf['secure'] = True
+        else:
+            conf['secure'] = False
+
+    return conf
+
+
+def get_global_options_parser(config):
     parser = OptionParser(add_help_option=False)
     parser.add_option(
         "-v", "--verbose",
@@ -107,29 +133,30 @@ def get_global_options_parser():
     parser.add_option(
         "-u", "--user",
         dest="user",
-        default="admin"
+        default=config["user"] if "user" in config else "admin"
     )
     parser.add_option(
         "-p", "--password",
-        dest="password"
+        dest="password",
+        default=config["password"] if "password" in config else "syno"
     )
 
     parser.add_option(
         "-H", "--host",
         dest="host",
-        default="syno"
+        default=config["host"] if "host" in config else "syno"
     )
     parser.add_option(
         "-P", "--port",
         dest="port",
-        default=5000
+        default=config["port"] if "port" in config else 5000
     )
 
     parser.add_option(
         "-s", "--secure",
         dest="secure",
-        default=False,
-        action="store_true"
+        action="store_true",
+        default=config["secure"] if "secure" in config else False
     )
 
     return parser
@@ -214,7 +241,8 @@ def delete_downloads(ds, options, id_list):
 
 
 def main():
-    (command_func, options, args) = parse_command_line()
+    config = parse_config()
+    (command_func, options, args) = parse_command_line(config)
 
     if options.help:
         usage()
