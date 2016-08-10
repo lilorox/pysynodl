@@ -12,7 +12,7 @@ class API:
         if use_https:
             self.scheme = "https://"
 
-        self.base_url = "%s%s:%d/webapi" % (self.scheme, self.host, self.port)
+        self.base_url = "%s%s:%s/webapi" % (self.scheme, self.host, str(self.port))
 
         self.auth_api_version = 2
         self.dl_api_version = 1
