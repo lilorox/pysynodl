@@ -109,9 +109,9 @@ def parse_config():
     conf = config['synology']
     if "secure" in conf:
         if conf['secure'] == "true" or conf['secure'] == "yes":
-            conf['secure'] = True
+            conf['secure'] = "true"
         else:
-            conf['secure'] = False
+            conf['secure'] = "false"
 
     return conf
 
@@ -213,8 +213,8 @@ def list_downloads(ds, options, args):
             max(len(dl['title']), len(titles[1]), fields_max_length[1]),
             max(len(dl['additional']['detail']['destination']), len(titles[2]), fields_max_length[2]),
             max(len(dl['status']), len(titles[3]), fields_max_length[3]),
-            max(len(human_sizeof(dl['additional']['transfer']['size_downloaded'])), len(titles[4]), fields_max_length[4]),
-            max(len(human_sizeof(dl['size'])), len(titles[5]), fields_max_length[5])
+            max(len(human_sizeof(float(dl['additional']['transfer']['size_downloaded']))), len(titles[4]), fields_max_length[4]),
+            max(len(human_sizeof(float(dl['size']))), len(titles[5]), fields_max_length[5])
         ]
     format_string = "%%-%ds %%-%ds  %%-%ds  %%-%ds  %%%ds / %%-%ds" % tuple(fields_max_length)
 
@@ -227,8 +227,8 @@ def list_downloads(ds, options, args):
                 dl['title'],
                 dl['additional']['detail']['destination'],
                 dl['status'],
-                human_sizeof(dl['additional']['transfer']['size_downloaded']),
-                human_sizeof(dl['size'])
+                human_sizeof(float(dl['additional']['transfer']['size_downloaded'])),
+                human_sizeof(float(dl['size']))
             )
         )
 
@@ -261,7 +261,7 @@ def main():
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.INFO)
             requests_log.propagate = True
-
+    options.secure="True"
     ds = DownloadStation(
         options.host,
         options.user,
