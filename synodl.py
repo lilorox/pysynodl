@@ -261,7 +261,6 @@ def main():
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.INFO)
             requests_log.propagate = True
-    options.secure="True"
     ds = DownloadStation(
         options.host,
         options.user,
