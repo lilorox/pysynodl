@@ -1,6 +1,6 @@
 import logging
 import requests
-from .exceptions import LoginFailedException
+from .exceptions import SynologyAuthenticationException
 
 class API:
     def __init__(self, host, user, password, session_name, port=5000, use_https=False):
@@ -40,11 +40,11 @@ class API:
             msg = "Cannot login"
             if "error" in res and "code" in res["error"]:
                 msg += " (error code: %d)" % res["error"]["code"]
-            raise LoginFailedException(msg)
+            raise SynologyAuthenticationException(msg)
         self.session_id = res['data']['sid']
 
     def logout(self):
-        self.req(
+        res = self.req(
             "%s/auth.cgi?api=SYNO.API.Auth&version=%d&method=logout&session=%s&_sid=%s"
             % (
                 self.base_url,
@@ -53,6 +53,11 @@ class API:
                 self.session_id
             )
         )
+        if not "success" in res or not res["success"]:
+            msg = "Cannot login"
+            if "error" in res and "code" in res["error"]:
+                msg += " (error code: %d)" % res["error"]["code"]
+            raise SynologyAuthenticationException(msg)
 
     def req(self, url, params=None):
         logging.debug('GET: ' + url)

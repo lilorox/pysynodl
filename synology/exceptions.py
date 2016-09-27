@@ -1,2 +1,2 @@
-class LoginFailedException(Exception):
+class SynologyAuthenticationException(Exception):
     pass
