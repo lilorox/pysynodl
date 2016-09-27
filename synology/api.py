@@ -1,5 +1,6 @@
 import logging
 import requests
+from .exceptions import LoginFailedException
 
 class API:
     def __init__(self, host, user, password, session_name, port=5000, use_https=False):
@@ -35,6 +36,11 @@ class API:
                 self.session_name
             )
         )
+        if not "success" in res or not res["success"]:
+            msg = "Cannot login"
+            if "error" in res and "code" in res["error"]:
+                msg += " (error code: %d)" % res["error"]["code"]
+            raise LoginFailedException(msg)
         self.session_id = res['data']['sid']
 
     def logout(self):
