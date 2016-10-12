@@ -8,6 +8,9 @@ from getpass import getpass
 from optparse import OptionParser
 from synology.downloadstation import DownloadStation
 
+from utils import print_error, human_sizeof
+from progress import ProgressWatcher
+
 logging.basicConfig(
     format="%(asctime)-15s %(levelname)-6s %(name)-8s %(message)s",
     level=logging.ERROR
@@ -15,17 +18,6 @@ logging.basicConfig(
 
 command = ""
 config_file = os.path.join(os.path.expanduser("~"), ".synodl.ini")
-
-def print_error(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-
-def human_sizeof(num):
-    for x in ['B', 'KB', 'MB', 'GB']:
-        if(num < 1024.0):
-            return "%3.1f%s" % (num, x)
-        num /= 1024.0
-    return "%3.1f%s" % (num, 'TB')
 
 
 def usage():
@@ -45,8 +37,10 @@ def usage():
         " -P, --port        Port to connect to the Synology",
         "                   Defaults to 5000",
         " -s, --secure      Use https to connect the Synology",
-        " -h, --help        Show this help",
         " -v, --verbose     Increases verbosity (cumulative)",
+        " -n, --dont-list   Don't list the current downloads after the command",
+        "                   is sent",
+        " -h, --help        Show this help",
         "",
         "Commands options:",
         " add [-d dest|--destination=dest] URL",
@@ -85,6 +79,9 @@ def parse_command_line(config):
     elif command == "delete":
         parse_delete_command(parser)
         command_func = delete_downloads
+    elif command == "watch":
+        parse_watch_progress_command(parser)
+        command_func = watch_progress
     elif command in ["-h", "--help", "h", "help"]:
         usage()
         sys.exit(0)
@@ -124,6 +121,12 @@ def get_global_options_parser(config):
         action="count"
     )
     parser.add_option(
+        "-n", "--dont-list",
+        dest="dontlist",
+        action="store_true",
+        default=False
+    )
+    parser.add_option(
         "-h", "--help",
         dest="help",
         action="store_true",
@@ -151,7 +154,6 @@ def get_global_options_parser(config):
         dest="port",
         default=config["port"] if "port" in config else 5000
     )
-
     parser.add_option(
         "-s", "--secure",
         dest="secure",
@@ -189,10 +191,16 @@ def parse_delete_command(parser):
     )
 
 
+def parse_watch_progress_command(parser):
+    pass
+
+
 def add_downloads(ds, options, args):
     for url in args:
         logging.info("Adding download %s" % url)
         ds.add(url, destination=options.destination)
+    if not options.dontlist:
+        list_downloads(ds, options, None)
 
 
 def list_downloads(ds, options, args):
@@ -238,7 +246,13 @@ def delete_downloads(ds, options, id_list):
         id_list = [dl['id'] for dl in ds.list()]
     logging.info("Deleting downloads %s" % ",".join(id_list))
     ds.delete(id_list, force=options.force)
+    if not options.dontlist:
+        list_downloads(ds, options, None)
 
+
+def watch_progress(ds, options, args):
+    watcher = ProgressWatcher(ds)
+    watcher.start()
 
 def main():
     config = parse_config()
