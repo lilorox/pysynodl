@@ -1,12 +1,8 @@
+import curses
 import signal
 import time
 
-def human_sizeof(num):
-    for x in ['B', 'KB', 'MB', 'GB']:
-        if(num < 1024.0):
-            return "%3.1f%s" % (num, x)
-        num /= 1024.0
-    return "%3.1f%s" % (num, 'TB')
+from utils import human_sizeof
 
 class ProgressWatcher(object):
     def __init__(self, ds):
@@ -27,11 +23,17 @@ class ProgressWatcher(object):
 
     def start(self):
         self.running = True
-        while self.running:
-            self.update()
-            time.sleep(1)
+        curses.wrapper(self._start_curses)
 
-    def update(self):
+    def _start_curses(self, screen):
+        screen.clear()
+        while self.running:
+            self.update(screen)
+            screen.refresh()
+            time.sleep(1)
+            screen.clear()
+
+    def update(self, screen):
         dl_list = self.ds.list()
         fields_max_length = [0, 0, 0, 0, 0, 0]
         titles = [
@@ -54,9 +56,12 @@ class ProgressWatcher(object):
             ]
         format_string = "%%-%ds %%-%ds  %%-%ds  %%-%ds  %%%ds / %%-%ds" % tuple(fields_max_length)
 
-        print(format_string % tuple(titles))
+        screen.addstr(0, 0, format_string % tuple(titles))
+        y = 1
         for dl in dl_list:
-            print(
+            screen.addstr(
+                y,
+                0,
                 format_string
                 % (
                     dl['id'],
@@ -67,4 +72,5 @@ class ProgressWatcher(object):
                     human_sizeof(float(dl['size']))
                 )
             )
+            y += 1
 
